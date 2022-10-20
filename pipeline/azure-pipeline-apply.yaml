@@ -15,14 +15,14 @@ variables:
   value: 'terraform.tfstate'
 # Aks 
 - name: kubernetesCluster
-  value: 'azdevops-aks-agent'
+  value: 'aks-azdevops-aks-agent'
 - name: aksServiceConnect
   value: 'sc-aks'
 # Azure Cloud
 - name: azureTenantId
   value: '875b34ac-da75-469f-88ba-56aa2314fd24'
 - name: azureResourceGroup
-  value: 'azdevops-aks-agent'
+  value: 'rg-azdevops-aks-agent'
 - name: azureSubscriptionId
   value: '795e0d19-d32c-4ad7-a870-bdc45d74c8d4'
 - name: azureSubscriptionName
