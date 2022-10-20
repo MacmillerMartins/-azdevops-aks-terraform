@@ -10,7 +10,7 @@ variables:
 - name: backendAzureRmStorageAccountName 
   value: 'sambabootcampfstate'
 - name: backendAzureRmContainerName
-  value: 'scmbabootcampfstate'
+  value: 'scazdevopsaksagentfstate'
 - name: backendAzureRmKey
   value: 'terraform.tfstate'
 
