@@ -52,7 +52,6 @@ stages:
       displayName: Terraform Installer
       inputs:
         terraformVersion: '1.2.1'
-
     - task: TerraformTaskV3@3
       displayName: Terraform Init
       inputs:
@@ -63,27 +62,24 @@ stages:
         backendAzureRmStorageAccountName: '$(backendAzureRmStorageAccountName)'
         backendAzureRmContainerName: '$(backendAzureRmContainerName)'
         backendAzureRmKey: '$(backendAzureRmKey)'
-
     - task: TerraformTaskV3@3
       displayName: Terraform Validate
       inputs:
         provider: 'azurerm'
         command: 'validate'
-
     - task: TerraformTaskV3@3
       displayName: Terraform Plan
       inputs:
         provider: 'azurerm'
         command: 'plan'
         environmentServiceNameAzureRM: '$(backendServiceArm)'
-
     - task: TerraformTaskV3@3
       displayName: Terraform Apply
       inputs:
         provider: 'azurerm'
         command: 'apply'
         environmentServiceNameAzureRM: '$(backendServiceArm)'
-
+        
 - stage: CreateSCAks
   displayName: Create SC Aks
   dependsOn: InstallAks
