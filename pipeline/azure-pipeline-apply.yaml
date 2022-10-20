@@ -1,0 +1,131 @@
+variables:
+# Agent Azure DevOps
+- name: imageAgentAz
+  value: 'ubuntu-latest'
+# Tfstate
+- name: backendServiceArm
+  value: 'macmiller(795e0d19-d32c-4ad7-a870-bdc45d74c8d4)'
+- name: backendAzureRmResourceGroupName
+  value: 'rg-bootcamp-tfstate'
+- name: backendAzureRmStorageAccountName 
+  value: 'sambabootcampfstate'
+- name: backendAzureRmContainerName
+  value: 'scmbabootcampfstate'
+- name: backendAzureRmKey
+  value: 'terraform.tfstate'
+# Aks 
+- name: kubernetesCluster
+  value: 'azdevops-aks-agent'
+- name: aksServiceConnect
+  value: 'sc-aks'
+# Azure Cloud
+- name: azureTenantId
+  value: '875b34ac-da75-469f-88ba-56aa2314fd24'
+- name: azureResourceGroup
+  value: 'azdevops-aks-agent'
+- name: azureSubscriptionId
+  value: '795e0d19-d32c-4ad7-a870-bdc45d74c8d4'
+- name: azureSubscriptionName
+  value: 'macmiller'
+- name: clusterId
+  value: "/subscriptions/$(azureSubscriptionId)/resourcegroups/$(azureResourceGroup)/providers/Microsoft.ContainerService/managedClusters/$(kubernetesCluster)"
+# Azure Authorization
+- name: serviceAccountName
+  value: 'azdev-sa-d4cd20'
+- name: roleBindingName
+  value: 'azdev-rb-azdev-sa-d4cd20-admin-on-default'
+- name: secretName
+  value: 'azdev-sa-d4cd20-token-k52pc'
+
+
+stages:
+
+- stage: InstallAks
+  displayName: Install Aks
+  jobs:
+  - job: InstallAks
+    displayName: Install Aks
+    pool:
+      vmImage: '$(imageAgentAz)'
+    steps:
+    - task: TerraformInstaller@0
+      displayName: Terraform Installer
+      inputs:
+        terraformVersion: '1.2.1'
+
+    - task: TerraformTaskV3@3
+      displayName: Terraform Init
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: '$(backendServiceArm)'
+        backendAzureRmResourceGroupName: '$(backendAzureRmResourceGroupName)'
+        backendAzureRmStorageAccountName: '$(backendAzureRmStorageAccountName)'
+        backendAzureRmContainerName: '$(backendAzureRmContainerName)'
+        backendAzureRmKey: '$(backendAzureRmKey)'
+
+    - task: TerraformTaskV3@3
+      displayName: Terraform Validate
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+
+    - task: TerraformTaskV3@3
+      displayName: Terraform Plan
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        environmentServiceNameAzureRM: '$(backendServiceArm)'
+
+    - task: TerraformTaskV3@3
+      displayName: Terraform Apply
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        environmentServiceNameAzureRM: '$(backendServiceArm)'
+
+- stage: CreateSCAks
+  displayName: Create SC Aks
+  dependsOn: InstallAks
+  jobs:
+  - job: CreateSCAks
+    displayName: Create SC Aks
+    pool:
+      vmImage: '$(imageAgentAz)'
+    steps:
+    - task: KubectlInstaller@0
+      displayName: Kubectl Install
+      inputs:
+        kubectlVersion: 'latest'
+    - task: Bash@3
+      displayName: Prepared Create SC Aks
+      inputs:
+        targetType: 'inline'
+        script: |
+          az login -u $(azLogin) -p $(azPassword)
+          az aks get-credentials --resource-group $(azureResourceGroup) --name $(kubernetesCluster)
+          urlAks=`kubectl config view --minify -o jsonpath={.clusters[0].cluster.server} | sed 's/:443//g'`
+          sed -i -e "s;urlAksTemp;$urlAks;" sc-aks.json
+          sed -i -e "s;azureSubscriptionIdTemp;$(azureSubscriptionId);" sc-aks.json
+          sed -i -e "s;azureSubscriptionNameTemp;$(azureSubscriptionName);" sc-aks.json
+          sed -i -e "s;clusterIdTemp;$(clusterId);" sc-aks.json
+          sed -i -e "s;azureTenantIdTemp;$(azureTenantId);" sc-aks.json
+          sed -i -e "s;serviceAccountNameTemp;$(serviceAccountName);" sc-aks.json
+          sed -i -e "s;roleBindingNameTemp;$(roleBindingName);" sc-aks.json
+          sed -i -e "s;secretNameTemp;$(secretName);" sc-aks.json
+          sed -i -e "s;aksServiceConnectTemp;$(aksServiceConnect);" sc-aks.json
+          sed -i -e "s;TeamProjectIdTemp;$(System.TeamProjectId);" sc-aks.json
+    - task: Bash@3
+      displayName: Create SC Aks
+      inputs:
+        targetType: 'inline'
+        script: |
+          az devops service-endpoint create --project $(system.teamProject) --organization $(System.TeamFoundationCollectionUri) --service-endpoint-configuration ./sc-aks.json | grep id | sed -n '3p' | awk '{print $2}' | sed 's/"\|,//g' > scAksId
+    - task: Bash@3
+      displayName: Update SC Aks
+      inputs:
+        targetType: 'inline'
+        script: |
+          az devops configure --defaults organization=$(System.TeamFoundationCollectionUri)
+          az devops configure --defaults project=$(system.teamProject)
+          az devops service-endpoint update --id `cat scAksId` --enable-for-all true

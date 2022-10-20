@@ -1,0 +1,41 @@
+{
+  "data": {
+    "authorizationType": "AzureSubscription",
+    "azureSubscriptionId": "azureSubscriptionIdTemp",
+    "azureSubscriptionName": "azureSubscriptionNameTemp",
+    "clusterId": "clusterIdTemp",
+    "namespace": "default"
+  },
+  "description": "",
+  "authorization": {
+    "parameters": {
+        "azureTenantId": "azureTenantIdTemp",
+        "azureEnvironment": "AzureCloud",
+        "serviceAccountName": "serviceAccountNameTemp",
+        "roleBindingName": "roleBindingNameTemp",
+        "secretName": "secretNameTemp",
+        "ApiToken": null,
+        "serviceAccountCertificate": null
+    },
+    "scheme": "Kubernetes"
+  },  
+  "groupScopeId": null,
+  "isReady": true,
+  "isShared": false,
+  "operationStatus": null,
+  "owner": "Library",
+  "readersGroup": null,
+  "serviceEndpointProjectReferences": [
+    {
+      "description": "",
+      "name": "aksServiceConnectTemp",
+      "projectReference": {
+        "id": "TeamProjectIdTemp",
+        "name": "azdevops-aks-agent"
+      }
+    }
+  ],
+  "name": "aksServiceConnectTemp",
+  "type": "kubernetes",
+  "url": "urlAksTemp"
+}
